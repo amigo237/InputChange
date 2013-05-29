@@ -4,6 +4,12 @@
  */
  
 (function(window) {
+
+	/*
+	经过测试，ie6-ie8可以用onpropertychange事件模拟oninput事件，
+	ie9的onpropertychange在输入的时候会触发，删除字符的时候不会触发，
+	ie9支持oninput事件，但是删除，剪切的时候不会触发，为了统一处理，这儿用定时器来检查
+	*/
 	var isSupportOnInput = !window.attachEvent;
 
 	var InputChange = function( el, callback ) {
@@ -27,33 +33,38 @@
 		constructor: InputChange,
 		
 		_focusHandler: function() {
-			if( window.attachEvent ) {
-				util.addEvent( this._el, "propertychange", util.bind( this._inputHander, this ) );
+			if( !isSupportOnInput ) {
+				this._checkChangeTimerId = setInterval( util.bind( this._inputHandler, this ), 100 );
+				//util.addEvent( this._el, "propertychange", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
 			}
 			else {
-				util.addEvent( this._el, "input", util.bind( this._inputHander, this ) );
+				util.addEvent( this._el, "input", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
 			}
 			
 		},
 
 		_blurHandler: function() {
-			if( window.attachEvent ) {
-				util.removeEvent( this._el, "propertychange", util.bind( this._inputHander, this ) );
+			if( !isSupportOnInput ) {
+				clearInterval(this._checkChangeTimerId);
+				//util.removeEvent( this._el, "propertychange", util.bind( this._inputHandler, this ) );
 			}
 			else {
-				util.removeEvent( this._el, "input", util.bind( this._inputHander, this ) );
+				util.removeEvent( this._el, "input", this._inputHandlerReal );
 			}
 		},
 
-		_inputHander: function( e ) {
-			var value = this._el.value,
-				e = e || window.event;
-
+		_inputHandler: function( e ) {
+			var value = this._el.value;
+			//var e = e || window.event;
 			if( isSupportOnInput ) {
 				this._callback(value);
 			}
 			else {
-				e && e.propertyName == "value" && this._callback(value);
+				if( this._value !== value ) {
+					this._value = value;
+					this._callback(value);
+				}
+				//e && e.propertyName == "value" && this._callback(value);
 			}
 		}
 	};
@@ -64,20 +75,20 @@
 		},
 
 		addEvent: function(elem, type, func) {
-			if(elem.addEventListener){
-				elem.addEventListener(type, func, false);
-			}
-			else if(elem.attachEvent){
+			if(elem.attachEvent){
 				elem.attachEvent("on" + type, func);
+			}
+			else {
+				elem.addEventListener(type, func, false);
 			}
 		},
 
 		removeEvent: function(elem, type, func) {
-			if(elem.addEventListener){
-				elem.removeEventListener(type, func);
-			}
-			else if(elem.attachEvent){
+			if(elem.attachEvent){
 				elem.detachEvent("on" + type, func);
+			}
+			else {
+				elem.removeEventListener(type, func);
 			}
 		},
 

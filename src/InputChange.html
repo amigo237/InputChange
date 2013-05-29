@@ -13,7 +13,7 @@
 <script type="text/javascript">
 	InputChange($("#test").get(0), function(value) {
 		//alert(value);
-		$(document.body).append("<p>" + value + "</p>")
+		$(document.body).append("<p>" + (value == "" ? "blank" : value) + "</p>")
 	});
 </script>
 </body>
