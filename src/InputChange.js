@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * InputChange v1.0.0
  * Copyright (c) 2013, in shenzhen. luzhao@xunlei.com
  */
@@ -11,10 +11,11 @@
 	ie9支持oninput事件，但是删除，剪切的时候不会触发，为了统一处理，这儿用定时器来检查
 	*/
 	var isSupportOnInput = !window.attachEvent;
+	var noop = function(){};
 
-	var InputChange = function( el, callback ) {
+	var InputChange = function( el, change, focus, blur ) {
 		if (!(this instanceof InputChange)) {
-			var obj = new InputChange( el, callback );
+			var obj = new InputChange( el, change, focus, blur );
 			return obj;
 		}
 
@@ -24,7 +25,9 @@
 
 		this._el = el;
 		this._value = this._el.value;
-		this._callback = util.isFunction(callback) ? callback : function(){};
+		this._change = util.isFunction(change) ? change : noop;
+		this._focus = util.isFunction(focus) ? focus : noop;
+		this._blur = util.isFunction(blur) ? blur : noop;
 		util.addEvent( this._el, "focus", util.bind(this._focusHandler, this) );
 		util.addEvent( this._el, "blur", util.bind(this._blurHandler, this) );
 	}
@@ -40,7 +43,7 @@
 			else {
 				util.addEvent( this._el, "input", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
 			}
-			
+			this._focus(this._value);
 		},
 
 		_blurHandler: function() {
@@ -51,20 +54,22 @@
 			else {
 				util.removeEvent( this._el, "input", this._inputHandlerReal );
 			}
+			this._blur();
 		},
 
 		_inputHandler: function( e ) {
 			var value = this._el.value;
 			//var e = e || window.event;
 			if( isSupportOnInput ) {
-				this._callback(value);
+				this._value = value;
+				this._change(value);
 			}
 			else {
 				if( this._value !== value ) {
 					this._value = value;
-					this._callback(value);
+					this._change(value);
 				}
-				//e && e.propertyName == "value" && this._callback(value);
+				//e && e.propertyName == "value" && this._change(value);
 			}
 		}
 	};
