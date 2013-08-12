@@ -5,109 +5,109 @@
  
 (function(window) {
 
-	/*
-	经过测试，ie6-ie8可以用onpropertychange事件模拟oninput事件，
-	ie9的onpropertychange在输入的时候会触发，删除字符的时候不会触发，
-	ie9支持oninput事件，但是删除，剪切的时候不会触发，为了统一处理，这儿用定时器来检查
-	*/
-	var isSupportOnInput = !window.attachEvent;
-	var noop = function(){};
+    /*
+    经过测试，ie6-ie8可以用onpropertychange事件模拟oninput事件，
+    ie9的onpropertychange在输入的时候会触发，删除字符的时候不会触发，
+    ie9支持oninput事件，但是删除，剪切的时候不会触发，为了统一处理，这儿用定时器来检查
+    */
+    var isSupportOnInput = !window.attachEvent;
+    var noop = function(){};
 
-	var InputChange = function( el, change, focus, blur ) {
-		if (!(this instanceof InputChange)) {
-			var obj = new InputChange( el, change, focus, blur );
-			return obj;
-		}
+    var InputChange = function( el, change, focus, blur ) {
+        if (!(this instanceof InputChange)) {
+            var obj = new InputChange( el, change, focus, blur );
+            return obj;
+        }
 
-		if( !el || el.nodeType !== 1 ) {
-			throw new Error("Error parameter!");
-		}
+        if( !el || el.nodeType !== 1 ) {
+            throw new Error("Error parameter!");
+        }
 
-		this._el = el;
-		this._value = this._el.value;
-		this._change = util.isFunction(change) ? change : noop;
-		this._focus = util.isFunction(focus) ? focus : noop;
-		this._blur = util.isFunction(blur) ? blur : noop;
-		util.addEvent( this._el, "focus", util.bind(this._focusHandler, this) );
-		util.addEvent( this._el, "blur", util.bind(this._blurHandler, this) );
-	}
+        this._el = el;
+        this._value = this._el.value;
+        this._change = util.isFunction(change) ? change : noop;
+        this._focus = util.isFunction(focus) ? focus : noop;
+        this._blur = util.isFunction(blur) ? blur : noop;
+        util.addEvent( this._el, "focus", util.bind(this._focusHandler, this) );
+        util.addEvent( this._el, "blur", util.bind(this._blurHandler, this) );
+    }
 
-	InputChange.prototype = {
-		constructor: InputChange,
-		
-		_focusHandler: function() {
-			if( !isSupportOnInput ) {
-				this._checkChangeTimerId = setInterval( util.bind( this._inputHandler, this ), 100 );
-				//util.addEvent( this._el, "propertychange", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
-			}
-			else {
-				util.addEvent( this._el, "input", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
-			}
-			this._focus(this._value);
-		},
+    InputChange.prototype = {
+        constructor: InputChange,
+        
+        _focusHandler: function() {
+            if( !isSupportOnInput ) {
+                this._checkChangeTimerId = setInterval( util.bind( this._inputHandler, this ), 100 );
+                //util.addEvent( this._el, "propertychange", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
+            }
+            else {
+                util.addEvent( this._el, "input", this._inputHandlerReal = util.bind( this._inputHandler, this ) );
+            }
+            this._focus(this._value);
+        },
 
-		_blurHandler: function() {
-			if( !isSupportOnInput ) {
-				clearInterval(this._checkChangeTimerId);
-				//util.removeEvent( this._el, "propertychange", util.bind( this._inputHandler, this ) );
-			}
-			else {
-				util.removeEvent( this._el, "input", this._inputHandlerReal );
-			}
-			this._blur();
-		},
+        _blurHandler: function() {
+            if( !isSupportOnInput ) {
+                clearInterval(this._checkChangeTimerId);
+                //util.removeEvent( this._el, "propertychange", util.bind( this._inputHandler, this ) );
+            }
+            else {
+                util.removeEvent( this._el, "input", this._inputHandlerReal );
+            }
+            this._blur();
+        },
 
-		_inputHandler: function( e ) {
-			var value = this._el.value;
-			//var e = e || window.event;
-			if( isSupportOnInput ) {
-				this._value = value;
-				this._change(value);
-			}
-			else {
-				if( this._value !== value ) {
-					this._value = value;
-					this._change(value);
-				}
-				//e && e.propertyName == "value" && this._change(value);
-			}
-		}
-	};
+        _inputHandler: function( e ) {
+            var value = this._el.value;
+            //var e = e || window.event;
+            if( isSupportOnInput ) {
+                this._value = value;
+                this._change(value);
+            }
+            else {
+                if( this._value !== value ) {
+                    this._value = value;
+                    this._change(value);
+                }
+                //e && e.propertyName == "value" && this._change(value);
+            }
+        }
+    };
 
-	var util = {
-		isFunction: function(obj) {
-			return Object.prototype.toString.call(obj) === "[object Function]";
-		},
+    var util = {
+        isFunction: function(obj) {
+            return Object.prototype.toString.call(obj) === "[object Function]";
+        },
 
-		addEvent: function(elem, type, func) {
-			if(elem.attachEvent){
-				elem.attachEvent("on" + type, func);
-			}
-			else {
-				elem.addEventListener(type, func, false);
-			}
-		},
+        addEvent: function(elem, type, func) {
+            if(elem.attachEvent){
+                elem.attachEvent("on" + type, func);
+            }
+            else {
+                elem.addEventListener(type, func, false);
+            }
+        },
 
-		removeEvent: function(elem, type, func) {
-			if(elem.attachEvent){
-				elem.detachEvent("on" + type, func);
-			}
-			else {
-				elem.removeEventListener(type, func);
-			}
-		},
+        removeEvent: function(elem, type, func) {
+            if(elem.attachEvent){
+                elem.detachEvent("on" + type, func);
+            }
+            else {
+                elem.removeEventListener(type, func);
+            }
+        },
 
-		bind: function(func, context){
-			if (Function.prototype.bind) {
-				return func.bind(context);
-			}
-			else {
-				return function(){
-					return func.apply(context, Array.prototype.slice.call(arguments, 0));
-				};
-			}
-		}
-	};
-	
-	window.InputChange = InputChange;
+        bind: function(func, context){
+            if (Function.prototype.bind) {
+                return func.bind(context);
+            }
+            else {
+                return function(){
+                    return func.apply(context, Array.prototype.slice.call(arguments, 0));
+                };
+            }
+        }
+    };
+    
+    window.InputChange = InputChange;
 })(window)
